@@ -46,14 +46,20 @@ app.get('/', (req, res) => {
 
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  const user = users.find(u => u.username == username && u.password == password);
+
+  // Éviter injection : filtrage basique
+  const cleanUsername = username.replace(/[^a-zA-Z0-9]/g, '');
+  const cleanPassword = password.replace(/[^a-zA-Z0-9]/g, '');
+
+  const user = users.find(u => u.username === cleanUsername && u.password === cleanPassword);
   if (user) {
     req.session.user = user;
     res.redirect('/dashboard');
   } else {
-    res.send('Login failed');
+    res.send('Login échoué');
   }
 });
+
 
 
 app.get('/contact', (req, res) => {
