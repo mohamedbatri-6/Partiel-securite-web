@@ -1,6 +1,15 @@
-<h2>Connexion</h2>
-<form method="POST" action="/login">
-  <input name="username" placeholder="Nom d'utilisateur" />
-  <input name="password" type="password" placeholder="Mot de passe" />
-  <button type="submit">Se connecter</button>
-</form>
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // Éviter injection : filtrage basique
+  const cleanUsername = username.replace(/[^a-zA-Z0-9]/g, '');
+  const cleanPassword = password.replace(/[^a-zA-Z0-9]/g, '');
+
+  const user = users.find(u => u.username === cleanUsername && u.password === cleanPassword);
+  if (user) {
+    req.session.user = user;
+    res.redirect('/dashboard');
+  } else {
+    res.send('Login échoué');
+  }
+});

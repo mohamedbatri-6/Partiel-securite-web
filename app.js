@@ -7,14 +7,26 @@ const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
 const app = express();
+const csrf = require('csurf');
+const csrfProtection = csrf();
+
+
+app.use(csrfProtection);
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+
 app.use(session({
   secret: 'notsecure',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false, // mettre true si HTTPS
+    sameSite: 'strict'
+  }
 }));
+
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -49,24 +61,31 @@ app.get('/contact', (req, res) => {
 });
 
 app.post('/contact', (req, res) => {
-  const { message } = req.body;
+  let message = req.body.message;
+  // Nettoyer le message
+  message = sanitizeHtml(message, {
+    allowedTags: [], // aucun HTML autorisé
+    allowedAttributes: {}
+  });
   messages.push(message);
   res.redirect('/contact');
 });
 
 
+
 app.get('/dashboard', (req, res) => {
   if (!req.session.user) return res.redirect('/');
-  const userId = parseInt(req.query.id || req.session.user.id);
-  const user = users.find(u => u.id === userId);
+  const user = req.session.user; // on ignore ?id
   res.render('dashboard', { user });
 });
 
 
+
 app.get('/edit-profile', (req, res) => {
   if (!req.session.user) return res.redirect('/');
-  res.render('edit');
+  res.render('edit', { csrfToken: req.csrfToken() });
 });
+
 
 app.post('/edit-profile', (req, res) => {
   if (!req.session.user) return res.redirect('/');
